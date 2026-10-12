@@ -1,56 +1,61 @@
 {
   "latency_ms": {
     "A. message by id, channel known (targeted)": {
-      "p50": 1.11,
-      "p95": 1.63,
-      "p99": 2.08,
+      "p50": 1.27,
+      "p95": 1.74,
+      "p99": 2.27,
       "shard_queries_per_query": 1.0
     },
     "A. message by id, lookup vindex": {
-      "p50": 1.9,
-      "p95": 2.96,
-      "p99": 3.54,
+      "p50": 2.12,
+      "p95": 3.21,
+      "p99": 3.67,
       "shard_queries_per_query": 2.0
     },
     "A. message by id, scatter": {
-      "p50": 2.95,
-      "p95": 4.77,
-      "p99": 5.95,
+      "p50": 3.06,
+      "p95": 4.6,
+      "p99": 5.75,
       "shard_queries_per_query": 4.0
     },
     "B. latest 50 by channel (targeted)": {
-      "p50": 4.8,
-      "p95": 5.36,
-      "p99": 5.91,
+      "p50": 4.9,
+      "p95": 6.01,
+      "p99": 7.39,
       "shard_queries_per_query": 1.0
     },
     "B. latest 50 by user (scatter + merge)": {
-      "p50": 5.9,
-      "p95": 7.55,
-      "p99": 8.89,
+      "p50": 5.87,
+      "p95": 7.85,
+      "p99": 9.37,
       "shard_queries_per_query": 4.0
     }
   },
   "capacity_15s_8_threads": {
     "A. message by id, channel known (targeted)": {
-      "logical_qps": 1188.6,
-      "shard_qps": 1188.6
+      "logical_qps": 1193.5,
+      "shard_qps": 1193.5,
+      "router_cpu_note": "router, client threads and all MySQL servers share one 4-core Pi"
     },
     "A. message by id, lookup vindex": {
-      "logical_qps": 723.1,
-      "shard_qps": 1446.1
+      "logical_qps": 709.7,
+      "shard_qps": 1419.3,
+      "router_cpu_note": "router, client threads and all MySQL servers share one 4-core Pi"
     },
     "A. message by id, scatter": {
-      "logical_qps": 306.1,
-      "shard_qps": 1224.3
+      "logical_qps": 306.9,
+      "shard_qps": 1227.5,
+      "router_cpu_note": "router, client threads and all MySQL servers share one 4-core Pi"
     },
     "B. latest 50 by channel (targeted)": {
-      "logical_qps": 249.9,
-      "shard_qps": 249.9
+      "logical_qps": 252.9,
+      "shard_qps": 252.9,
+      "router_cpu_note": "router, client threads and all MySQL servers share one 4-core Pi"
     },
     "B. latest 50 by user (scatter + merge)": {
-      "logical_qps": 157.3,
-      "shard_qps": 629.3
+      "logical_qps": 157.4,
+      "shard_qps": 629.6,
+      "router_cpu_note": "router, client threads and all MySQL servers share one 4-core Pi"
     }
   }
 }

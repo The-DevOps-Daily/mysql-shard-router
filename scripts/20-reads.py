@@ -21,15 +21,16 @@ weights = [1 / (i + 1) for i in range(N_CH)]
 
 def pick_channel(g): return g.choices(range(1, N_CH + 1), weights=weights, k=1)[0]
 
-# Ids with their channel, fetched up front (not timed) for the targeted case.
+# The same 2,000 random message ids for all three "A" queries, with their
+# channel fetched up front (not timed) for the targeted case.
 known = []
 for mid in random.Random(3).sample(range(1, N_MSG + 1), 2000):
     known.append((mid, r.run(r.port_for(mid), "SELECT channel_id FROM message_lookup WHERE id=%s", (mid,))[0][0]))
 
 QUERIES = {
     "A. message by id, channel known (targeted)": (lambda g: r.by_id_targeted(*g.choice(known))),
-    "A. message by id, lookup vindex":            (lambda g: r.by_id_lookup(g.randint(1, N_MSG))),
-    "A. message by id, scatter":                  (lambda g: r.by_id_scatter(g.randint(1, N_MSG))),
+    "A. message by id, lookup vindex":            (lambda g: r.by_id_lookup(g.choice(known)[0])),
+    "A. message by id, scatter":                  (lambda g: r.by_id_scatter(g.choice(known)[0])),
     "B. latest 50 by channel (targeted)":         (lambda g: r.by_channel(pick_channel(g))),
     "B. latest 50 by user (scatter + merge)":     (lambda g: r.by_user(g.randint(1, N_USERS))),
 }
@@ -38,16 +39,24 @@ def pct(xs, p):
     xs = sorted(xs); return xs[min(len(xs) - 1, int(len(xs) * p / 100))]
 
 out = {"latency_ms": {}, "capacity_15s_8_threads": {}}
-for name, q in QUERIES.items():
-    for _ in range(50):                      # warm connections and buffer pool
+# Warm every query type over the whole id set first, then interleave the types
+# in random order so no type gets a colder or warmer cache than another.
+for mid, ch in known:
+    r.by_id_targeted(mid, ch); r.by_id_lookup(mid); r.by_id_scatter(mid)
+for _ in range(200):
+    for q in QUERIES.values():
         q(rng)
-    before = r.shard_queries
-    samples = []
-    for _ in range(1000):
-        t = time.perf_counter(); q(rng); samples.append((time.perf_counter() - t) * 1000)
+samples = {name: [] for name in QUERIES}
+counts = {name: 0 for name in QUERIES}
+for _ in range(1000):
+    for name in rng.sample(list(QUERIES), len(QUERIES)):
+        before = r.shard_queries
+        t = time.perf_counter(); QUERIES[name](rng); samples[name].append((time.perf_counter() - t) * 1000)
+        counts[name] += r.shard_queries - before
+for name, xs in samples.items():
     out["latency_ms"][name] = {
-        "p50": round(statistics.median(samples), 2), "p95": round(pct(samples, 95), 2),
-        "p99": round(pct(samples, 99), 2), "shard_queries_per_query": round((r.shard_queries - before) / 1000, 2),
+        "p50": round(statistics.median(xs), 2), "p95": round(pct(xs, 95), 2),
+        "p99": round(pct(xs, 99), 2), "shard_queries_per_query": round(counts[name] / 1000, 2),
     }
     print(name, out["latency_ms"][name], flush=True)
 
@@ -65,6 +74,7 @@ for name, q in QUERIES.items():
     total = sum(done)
     out["capacity_15s_8_threads"][name] = {
         "logical_qps": round(total / 15, 1), "shard_qps": round((r.shard_queries - before) / 15, 1),
+        "router_cpu_note": "router, client threads and all MySQL servers share one 4-core Pi",
     }
     print(name, out["capacity_15s_8_threads"][name], flush=True)
 

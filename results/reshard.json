@@ -1,67 +1,85 @@
 {
   "phases": {
-    "copy_seconds": 15.84,
-    "rows_copied": 44992,
+    "copy_seconds": 23.37,
+    "rows_copied": {
+      "messages": 44937,
+      "message_lookup": 24796,
+      "accounts": 129
+    },
     "verify": {
-      "watermark_id": 1000629,
-      "source": [
-        44992,
-        1707202274
-      ],
-      "target": [
-        44992,
-        1707202274
-      ],
+      "watermark_id": 1000507,
+      "messages_count_and_crc32_xor": {
+        "source": [
+          44963,
+          3640483901
+        ],
+        "target": [
+          44963,
+          3640483901
+        ]
+      },
+      "lookup_and_accounts_full_row_compare": {
+        "message_lookup": true,
+        "accounts": true
+      },
       "match": true
     },
-    "switch_ms": 0.026,
-    "cleanup_seconds": 16.95,
+    "local_map_update_ms": 0.026,
+    "cleanup_seconds": 23.68,
     "rows_deleted_from_source": 44999
   },
-  "writes_during_run": 1045,
+  "writes_during_run": 994,
   "write_errors": 0,
   "write_latency_ms": {
-    "p50": 5.58,
-    "p99": 408.24,
-    "max": 924.2,
-    "max_within_1s_of_switch": 352.39,
+    "p50": 12.79,
+    "p99": 625.29,
+    "max": 1485.21,
+    "max_within_1s_of_switch": 157.34,
     "by_phase": {
       "before": {
-        "writes": 201,
-        "p50": 3.49,
-        "p99": 132.73,
-        "max": 207.9
+        "writes": 141,
+        "p50": 8.33,
+        "p99": 173.56,
+        "max": 340.22
       },
       "copy": {
-        "writes": 430,
-        "p50": 6.92,
-        "p99": 350.76,
-        "max": 924.2
+        "writes": 366,
+        "p50": 16.48,
+        "p99": 618.26,
+        "max": 951.69
       },
       "verify": {
-        "writes": 45,
-        "p50": 3.71,
-        "p99": 223.46,
-        "max": 223.46
+        "writes": 167,
+        "p50": 11.6,
+        "p99": 118.16,
+        "max": 216.18
       },
       "after switch": {
-        "writes": 109,
-        "p50": 3.57,
-        "p99": 352.39,
-        "max": 467.29
+        "writes": 106,
+        "p50": 9.2,
+        "p99": 157.34,
+        "max": 345.94
       },
       "cleanup": {
-        "writes": 260,
-        "p50": 9.59,
-        "p99": 567.94,
-        "max": 653.83
+        "writes": 214,
+        "p50": 21.25,
+        "p99": 1016.55,
+        "max": 1485.21
       }
     }
   },
-  "rows_total_after": 201045,
-  "rows_expected": 201045,
-  "rows_on_wrong_shard": 0,
-  "naive_cutover_write_downtime_seconds": 15.84,
+  "messages_after": 200994,
+  "messages_expected": 200994,
+  "message_ids_match_expected_set": true,
+  "duplicate_message_ids": 0,
+  "lookup_rows_after": 200994,
+  "accounts_after": 1000,
+  "rows_on_wrong_shard_or_bad_ksid": 0,
+  "reads_during_run": {
+    "reads": 4316,
+    "missing": 0,
+    "duplicates": 0
+  },
   "shards_after": {
     "-40": 3311,
     "40-80": 3312,

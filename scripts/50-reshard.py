@@ -11,6 +11,11 @@
 5. Switch: route e0- to the new shard in one atomic map change.
 6. Clean up the moved rows on the old shard, stop the writer and check that
    every row exists exactly once, on the right shard.
+All three tables move: messages (keyed by channel), message_lookup (keyed by
+message id) and accounts (keyed by account id). A reader thread runs scatter
+and lookup-vindex reads the whole time and counts missing or duplicate rows.
+This is an insert-only demonstration: the copy is not a consistent snapshot and
+the mirror has no update/delete ordering or crash replay, which VReplication has.
 Writes results/reshard.json and the new shardmap.json.
 """
 import json, pathlib, random, threading, time
@@ -25,6 +30,23 @@ weights = [1 / (i + 1) for i in range(2000)]
 log = {"writes": 0, "errors": 0, "lat_ms": []}
 phase = ["before"]
 stop = threading.Event()
+reads = {"reads": 0, "missing": 0, "duplicates": 0}
+
+def reader():
+    g = random.Random(9)
+    while not stop.is_set():
+        mid = g.randint(1, 200_000)
+        if len(r.by_id_lookup(mid)) != 1:
+            reads["missing"] += 1
+        rows = r.by_user(g.randint(1, 5000))
+        if len({row[0] for row in rows}) != len(rows):
+            reads["duplicates"] += 1
+        reads["reads"] += 2
+        time.sleep(0.01)
+
+def moving_rows(table):
+    # message_lookup and accounts do not store the keyspace ID, so compute it.
+    return [row for row in r.run(SRC, f"SELECT * FROM {table}") if in_range(keyspace_id(row[0]), MOVING)]
 
 def writer():
     g = random.Random(5)
@@ -46,6 +68,7 @@ for t in ("messages", "message_lookup", "accounts"):    # the new shard starts e
     r.run(DST, f"DROP TABLE IF EXISTS {t}")
     r.run(DST, ddl)
 w = threading.Thread(target=writer); w.start()
+rd = threading.Thread(target=reader); rd.start()
 time.sleep(3)
 phases = {}
 
@@ -66,8 +89,14 @@ while True:
         cur.executemany("INSERT IGNORE INTO messages (id, ksid, channel_id, user_id, body, created_at) "
                         "VALUES (%s,%s,%s,%s,%s,%s)", rows)
     copied += len(rows); last = rows[-1][0]
+moved_small = {}
+for table, ncols in (("message_lookup", 2), ("accounts", 2)):
+    rows = moving_rows(table)
+    with r.conn(DST).cursor() as cur:
+        cur.executemany(f"INSERT IGNORE INTO {table} VALUES ({','.join(['%s'] * ncols)})", rows)
+    moved_small[table] = len(rows)
 phases["copy_seconds"] = round(time.time() - t0, 2)
-phases["rows_copied"] = copied
+phases["rows_copied"] = {"messages": copied, **moved_small}
 
 # 4. verify up to a watermark
 phase[0] = "verify"
@@ -76,8 +105,13 @@ time.sleep(0.5)
 q = ("SELECT COUNT(*), COALESCE(BIT_XOR(CRC32(CONCAT_WS('|', id, channel_id, user_id, body))), 0) "
      "FROM messages WHERE ksid >= %s AND id <= %s")
 src_sum, dst_sum = r.run(SRC, q, (LO, wm))[0], r.run(DST, q, (LO, wm))[0]
-phases["verify"] = {"watermark_id": wm, "source": [int(x) for x in src_sum], "target": [int(x) for x in dst_sum],
-                    "match": tuple(src_sum) == tuple(dst_sum)}
+def small_sum(port, table):
+    rows = [row for row in r.run(port, f"SELECT * FROM {table}") if in_range(keyspace_id(row[0]), MOVING) and (table != "message_lookup" or row[0] <= wm)]
+    return [len(rows), hash(tuple(sorted(rows)))]
+phases["verify"] = {"watermark_id": wm,
+                    "messages_count_and_crc32_xor": {"source": [int(x) for x in src_sum], "target": [int(x) for x in dst_sum]},
+                    "lookup_and_accounts_full_row_compare": {t: small_sum(SRC, t) == small_sum(DST, t) for t in ("message_lookup", "accounts")}}
+phases["verify"]["match"] = tuple(src_sum) == tuple(dst_sum) and all(phases["verify"]["lookup_and_accounts_full_row_compare"].values())
 assert phases["verify"]["match"], phases["verify"]
 
 # 5. switch routing in one step
@@ -89,7 +123,7 @@ with r.lock:
     shards["c0-e0"], shards["e0-"] = SRC, DST
     r.map.shards = shards
     r.mirror = None
-phases["switch_ms"] = round((time.time() - t_switch) * 1000, 3)
+phases["local_map_update_ms"] = round((time.time() - t_switch) * 1000, 3)
 time.sleep(3)
 
 # 6. clean up and check
@@ -101,15 +135,28 @@ while True:
     deleted += n
     if n == 0:
         break
+for table, col in (("message_lookup", "id"), ("accounts", "account_id")):
+    ids = [row[0] for row in r.run(SRC, f"SELECT {col} FROM {table}") if in_range(keyspace_id(row[0]), MOVING)]
+    for i in range(0, len(ids), 1000):
+        chunk = ids[i:i + 1000]
+        r.run(SRC, f"DELETE FROM {table} WHERE {col} IN ({','.join(['%s'] * len(chunk))})", chunk)
 phases["cleanup_seconds"] = round(time.time() - t0, 2); phases["rows_deleted_from_source"] = deleted
-stop.set(); w.join()
+stop.set(); w.join(); rd.join()
 
 total = sum(r.run(p, "SELECT COUNT(*) FROM messages")[0][0] for p in r.map.shards.values())
 misplaced = 0
+ids_seen, dup_ids = set(), 0
 for name, port in r.map.shards.items():
-    for (ksid,) in r.run(port, "SELECT ksid FROM messages"):
-        if not in_range(bytes(ksid), name):
+    for mid, ksid, ch in r.run(port, "SELECT id, ksid, channel_id FROM messages"):
+        if not in_range(bytes(ksid), name) or bytes(ksid) != keyspace_id(ch):
             misplaced += 1
+        dup_ids += mid in ids_seen; ids_seen.add(mid)
+    for (k,) in r.run(port, "SELECT id FROM message_lookup") + r.run(port, "SELECT account_id FROM accounts"):
+        if not in_range(keyspace_id(k), name):
+            misplaced += 1
+expected_ids = set(range(1, 200_001)) | set(range(1_000_001, 1_000_001 + log["writes"]))
+lookups = sum(r.run(p, "SELECT COUNT(*) FROM message_lookup")[0][0] for p in r.map.shards.values())
+accounts = sum(r.run(p, "SELECT COUNT(*) FROM accounts")[0][0] for p in r.map.shards.values())
 lat = sorted(l for _, l, _ in log["lat_ms"])
 around = [l for ts, l, _ in log["lat_ms"] if abs(ts - t_switch) < 1]
 by_phase = {}
@@ -122,8 +169,11 @@ out = {
     "writes_during_run": log["writes"], "write_errors": log["errors"],
     "write_latency_ms": {"p50": round(lat[len(lat) // 2], 2), "p99": round(lat[int(len(lat) * .99)], 2), "max": round(lat[-1], 2),
                          "max_within_1s_of_switch": round(max(around), 2) if around else None, "by_phase": by_phase},
-    "rows_total_after": int(total), "rows_expected": 200_000 + log["writes"], "rows_on_wrong_shard": misplaced,
-    "naive_cutover_write_downtime_seconds": phases["copy_seconds"],
+    "messages_after": int(total), "messages_expected": 200_000 + log["writes"],
+    "message_ids_match_expected_set": ids_seen == expected_ids, "duplicate_message_ids": int(dup_ids),
+    "lookup_rows_after": int(lookups), "accounts_after": int(accounts),
+    "rows_on_wrong_shard_or_bad_ksid": misplaced,
+    "reads_during_run": reads,
     "shards_after": r.map.shards,
 }
 r.map.save()

@@ -59,8 +59,15 @@ class Router:
         self.run(port, sql, args)
         if mirror and in_range(ksid, mirror[0]):
             # Double-write into the shard the range is moving to, like Slack's
-            # migration and like VReplication's catch-up stream.
+            # migration. Insert-only: no update or delete ordering, no replay.
             self.run(mirror[1], sql.replace("INSERT", "INSERT IGNORE", 1), args)
+        # The lookup vindex row lives on the shard that owns the message id.
+        lk_ksid = keyspace_id(mid)
+        lk_port = next(p for n, p in shards.items() if in_range(lk_ksid, n))
+        lsql = "INSERT INTO message_lookup (id, channel_id) VALUES (%s,%s)"
+        self.run(lk_port, lsql, (mid, channel_id))
+        if mirror and in_range(lk_ksid, mirror[0]):
+            self.run(mirror[1], lsql.replace("INSERT", "INSERT IGNORE", 1), (mid, channel_id))
 
     # --- reads ------------------------------------------------------------
     def by_channel(self, channel_id, limit=50):
@@ -70,8 +77,11 @@ class Router:
 
     def scatter(self, sql, args, merge_key=None, limit=None):
         shards, _ = self.snapshot()
-        futures = [self.pool.submit(self.run, port, sql, args) for port in shards.values()]
-        rows = [r for f in futures for r in f.result()]
+        futures = [(name, self.pool.submit(self.run, port, sql, args)) for name, port in shards.items()]
+        # Keep only rows that belong to the shard that returned them (column 1 is
+        # ksid), so rows left behind on a source shard during a split never
+        # show up twice.
+        rows = [r for name, f in futures for r in f.result() if in_range(bytes(r[1]), name)]
         if merge_key:
             rows.sort(key=merge_key, reverse=True)
         return rows[:limit] if limit else rows

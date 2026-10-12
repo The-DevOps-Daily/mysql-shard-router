@@ -45,5 +45,7 @@
       "busiest_shard_pct": 14.58,
       "busiest_shard_pct_hot_channel_in_16_buckets": 8.34
     }
-  ]
+  ],
+  "second_channel": 2,
+  "second_channel_share_pct": 6.13
 }

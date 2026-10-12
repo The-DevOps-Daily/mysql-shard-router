@@ -32,5 +32,7 @@ for n in (2, 4, 8, 16, 32, 64, 128):
     out["by_shard_count"].append({"shards": n, "ideal_pct": round(100 / n, 2),
                                   "busiest_shard_pct": max_share(plain, n),
                                   "busiest_shard_pct_hot_channel_in_16_buckets": max_share(bucketed, n)})
+second, second_rows = per_channel.most_common(2)[1]
+out["second_channel"], out["second_channel_share_pct"] = second, round(100 * second_rows / total, 2)
 print(json.dumps(out, indent=2))
 pathlib.Path("/work/results/hot-shard.json").write_text(json.dumps(out, indent=2) + "\n")

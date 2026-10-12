@@ -1,56 +1,56 @@
 {
   "latency_ms": {
     "A. message by id, channel known (targeted)": {
-      "p50": 1.12,
-      "p95": 1.82,
-      "p99": 2.27,
+      "p50": 1.11,
+      "p95": 1.63,
+      "p99": 2.08,
       "shard_queries_per_query": 1.0
     },
     "A. message by id, lookup vindex": {
       "p50": 1.9,
-      "p95": 2.88,
-      "p99": 3.43,
+      "p95": 2.96,
+      "p99": 3.54,
       "shard_queries_per_query": 2.0
     },
     "A. message by id, scatter": {
-      "p50": 2.94,
-      "p95": 4.58,
-      "p99": 6.36,
+      "p50": 2.95,
+      "p95": 4.77,
+      "p99": 5.95,
       "shard_queries_per_query": 4.0
     },
     "B. latest 50 by channel (targeted)": {
-      "p50": 4.86,
-      "p95": 5.52,
-      "p99": 6.03,
+      "p50": 4.8,
+      "p95": 5.36,
+      "p99": 5.91,
       "shard_queries_per_query": 1.0
     },
     "B. latest 50 by user (scatter + merge)": {
-      "p50": 5.76,
+      "p50": 5.9,
       "p95": 7.55,
-      "p99": 9.14,
+      "p99": 8.89,
       "shard_queries_per_query": 4.0
     }
   },
   "capacity_15s_8_threads": {
     "A. message by id, channel known (targeted)": {
-      "logical_qps": 1166.7,
-      "shard_qps": 1166.7
+      "logical_qps": 1188.6,
+      "shard_qps": 1188.6
     },
     "A. message by id, lookup vindex": {
-      "logical_qps": 716.9,
-      "shard_qps": 1433.9
+      "logical_qps": 723.1,
+      "shard_qps": 1446.1
     },
     "A. message by id, scatter": {
-      "logical_qps": 309.8,
-      "shard_qps": 1239.2
+      "logical_qps": 306.1,
+      "shard_qps": 1224.3
     },
     "B. latest 50 by channel (targeted)": {
-      "logical_qps": 249.8,
-      "shard_qps": 249.8
+      "logical_qps": 249.9,
+      "shard_qps": 249.9
     },
     "B. latest 50 by user (scatter + merge)": {
-      "logical_qps": 160.2,
-      "shard_qps": 640.8
+      "logical_qps": 157.3,
+      "shard_qps": 629.3
     }
   }
 }

@@ -2,7 +2,7 @@
   "messages": 200000,
   "channels": 2000,
   "users": 5000,
-  "load_seconds": 82.9,
+  "load_seconds": 84.8,
   "rows_per_shard": {
     "-40": 45817,
     "40-80": 43643,

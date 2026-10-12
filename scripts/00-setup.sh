@@ -16,7 +16,10 @@ fi
 sudo cp /etc/resolv.conf "$R/etc/resolv.conf"
 mountpoint -q "$R/proc" || sudo mount -t proc proc "$R/proc"
 mountpoint -q "$R/dev" || { sudo mount --bind /dev "$R/dev"; sudo mount -o remount,bind,ro "$R/dev"; }
-sudo mkdir -p "$R/work" && sudo mount --bind "$PWD" "$R/work" 2>/dev/null || true
+sudo mkdir -p "$R/work"
+# Bind the repo into the chroot once, and make the mount private: with shared
+# propagation, binding a directory into its own subtree stacks extra mounts.
+mountpoint -q "$R/work" || { sudo mount --bind "$PWD" "$R/work"; sudo mount --make-private "$R/work"; }
 
 sudo chroot "$R" /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin DEBIAN_FRONTEND=noninteractive /bin/bash -c '
   set -e

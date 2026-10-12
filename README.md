@@ -11,7 +11,7 @@ scripts/run.sh 20-reads.py               # targeted vs lookup vindex vs scatter:
 scripts/run.sh 40-cross-shard-txn.py     # 2,000 transfers, 2% injected failures, same-shard vs cross-shard
 scripts/run.sh 50-reshard.py             # split c0- into c0-e0 + e0- while a writer keeps inserting
 scripts/run.sh 60-hot-shard.py           # busiest shard share for 2 to 128 shards
-scripts/99-stop.sh                       # stop MySQL, unmount the chroot
+scripts/99-stop.sh                       # stop MySQL, unmount the chroot (run before deleting rootfs/)
 ```
 
 Run `10-seed.py` again before re-running the other scripts: the reshard moves data and leaves five shards in `shardmap.json`.

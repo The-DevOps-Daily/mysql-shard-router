@@ -1,0 +1,23 @@
+{
+  "messages": 200000,
+  "channels": 2000,
+  "users": 5000,
+  "load_seconds": 82.9,
+  "rows_per_shard": {
+    "-40": 45817,
+    "40-80": 43643,
+    "80-c0": 48480,
+    "c0-": 62060
+  },
+  "share_per_shard_pct": {
+    "-40": 22.9,
+    "40-80": 21.8,
+    "80-c0": 24.2,
+    "c0-": 31.0
+  },
+  "top_channel": 1,
+  "top_channel_rows": 24568,
+  "top_channel_share_pct": 12.3,
+  "top_channel_shard": "c0-",
+  "top10_channels_share_pct": 35.8
+}

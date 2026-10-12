@@ -1,0 +1,20 @@
+{
+  "same-shard": {
+    "transfers": 2000,
+    "injected_failures": 32,
+    "credits_before": 1000000,
+    "credits_after": 1000000,
+    "credits_lost": 0,
+    "p50_ms": 3.26,
+    "p99_ms": 484.49
+  },
+  "cross-shard": {
+    "transfers": 2000,
+    "injected_failures": 52,
+    "credits_before": 1000000,
+    "credits_after": 999480,
+    "credits_lost": 520,
+    "p50_ms": 5.91,
+    "p99_ms": 467.95
+  }
+}

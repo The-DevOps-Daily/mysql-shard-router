@@ -1,0 +1,49 @@
+{
+  "total_rows": 200000,
+  "hot_channel": 1,
+  "hot_channel_share_pct": 12.28,
+  "by_shard_count": [
+    {
+      "shards": 2,
+      "ideal_pct": 50.0,
+      "busiest_shard_pct": 55.27,
+      "busiest_shard_pct_hot_channel_in_16_buckets": 50.1
+    },
+    {
+      "shards": 4,
+      "ideal_pct": 25.0,
+      "busiest_shard_pct": 31.03,
+      "busiest_shard_pct_hot_channel_in_16_buckets": 29.61
+    },
+    {
+      "shards": 8,
+      "ideal_pct": 12.5,
+      "busiest_shard_pct": 22.42,
+      "busiest_shard_pct_hot_channel_in_16_buckets": 16.87
+    },
+    {
+      "shards": 16,
+      "ideal_pct": 6.25,
+      "busiest_shard_pct": 17.52,
+      "busiest_shard_pct_hot_channel_in_16_buckets": 11.64
+    },
+    {
+      "shards": 32,
+      "ideal_pct": 3.12,
+      "busiest_shard_pct": 15.67,
+      "busiest_shard_pct_hot_channel_in_16_buckets": 9.88
+    },
+    {
+      "shards": 64,
+      "ideal_pct": 1.56,
+      "busiest_shard_pct": 15.19,
+      "busiest_shard_pct_hot_channel_in_16_buckets": 9.21
+    },
+    {
+      "shards": 128,
+      "ideal_pct": 0.78,
+      "busiest_shard_pct": 14.58,
+      "busiest_shard_pct_hot_channel_in_16_buckets": 8.34
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 A small Vitess-style shard router over five real MySQL 8.4 servers, built to measure the primitives every large MySQL shop ends up with: a hash vindex, targeted vs scatter queries, a lookup vindex, cross-shard transactions, an online reshard, and hot shards.
 
-It is not Vitess. The router is about 160 lines of Python, so you can read every decision. The numbers come from running it.
+It is not Vitess. The router is about 170 lines of Python, so you can read every decision. The numbers come from running it.
 
 ```bash
 scripts/00-setup.sh                      # Ubuntu 26.04 chroot with mysql-server + python3-pymysql, 5 mysqld on 127.0.0.1:3311-3315
